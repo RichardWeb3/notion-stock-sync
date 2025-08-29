@@ -1,5 +1,6 @@
 # notion_price_update.py — configurable tickers + Change % + multi-source + robust
 import os, datetime, time, random, requests, csv, io, re, sys
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from yfinance.exceptions import YFRateLimitError
 import yfinance as yf
@@ -171,9 +172,13 @@ def upsert_price(ticker: str, price: float, day: str):
         r = requests.post("https://api.notion.com/v1/pages", headers=H, json={"parent": {"database_id": DBID}, "properties": props})
         print(f"CREATE {ticker} ->", r.status_code)
 
+#if __name__ == "__main__":
+#    tickers = load_tickers()
+#    day = datetime.date.today().isoformat()
 if __name__ == "__main__":
     tickers = load_tickers()
-    day = datetime.date.today().isoformat()
+    # 用新加坡时区计算“今天”（GitHub Actions 是 UTC，避免日期偏移）
+    day = datetime.datetime.now(ZoneInfo("Asia/Singapore")).date().isoformat()
     for t in tickers:
         try:
             px = get_last_price(t)
