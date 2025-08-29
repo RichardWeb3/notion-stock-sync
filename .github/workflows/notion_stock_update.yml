@@ -1,23 +1,63 @@
 name: Notion Stock Price Update
+
 on:
   schedule:
-    - cron: "7 21 * * *"   # UTC 21:07 ≈ 北京时间 05:07（错峰）
+    - cron: "37 22 * * *"   # 示例：UTC 22:37（北京 06:37）
   workflow_dispatch:
+
+concurrency:
+  group: notion-stock-sync
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
-      with: { python-version: "3.11" }
-    - name: Install deps
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests python-dotenv yfinance
-    - name: Run
-      env:
-        NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-        NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-        ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY }} # 可选
-      run: python notion_price_update.py
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+      ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}  # 可选
 
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-v1
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests python-dotenv yfinance
+
+      # ✅ 自检（不泄露密钥）
+      - name: Check env presence (no secrets printed)
+        run: |
+          python - << 'PY'
+          import os, re
+          t = (os.getenv("NOTION_TOKEN") or "").strip()
+          d = (os.getenv("NOTION_DATABASE_ID") or "").strip()
+          print("NOTION_TOKEN set:", bool(t))
+          print("DBID set:", bool(d), "| looks like UUID:", bool(re.fullmatch(r"[0-9a-fA-F-]{36}", d)))
+          print("ALPHA_VANTAGE_KEY set:", bool((os.getenv('ALPHA_VANTAGE_KEY') or '').strip()))
+          PY
+
+      - name: Run Notion update script
+        run: python notion_price_update.py
+
+      - name: Notify on failure (Slack)
+        if: ${{ failure() && env.SLACK_WEBHOOK_URL != '' }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"❌ Notion stock update failed for '${{ github.repository }}' (run #${{ github.run_number }})"}' \
+            "$SLACK_WEBHOOK_URL"
