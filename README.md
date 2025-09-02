@@ -32,12 +32,18 @@ pip install -r requirements.txt
 ```
 
 ### 3. Configure `.env`
-复制 `.env.example` → `.env`，并填写：
+复制 `.env.example` → `.env`，并填写以下字段：
+
 ```
-NOTION_API_KEY=your_notion_key
-NOTION_DATABASE_ID=your_database_id
-BROKER_API_KEY=your_broker_key   # 如果需要
+NOTION_TOKEN=your_notion_integration_token
+NOTION_DATABASE_ID=your_notion_database_id
+ALPHA_VANTAGE_KEY=your_alpha_vantage_api_key
 ```
+
+**字段说明**
+- `NOTION_TOKEN`: 从 [Notion Developers](https://www.notion.so/my-integrations) 创建 integration 后获取的 token  
+- `NOTION_DATABASE_ID`: 目标 Notion 数据库的 ID（复制数据库 URL 中的部分字符串）  
+- `ALPHA_VANTAGE_KEY`: 从 [Alpha Vantage](https://www.alphavantage.co/support/#api-key) 申请的股票行情 API key  
 
 ### 4. Run sync
 ```bash
