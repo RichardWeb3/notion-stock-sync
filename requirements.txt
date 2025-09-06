@@ -1,0 +1,5 @@
+# Notion Stock Sync – core dependencies
+# Use relaxed upper bounds for stability while allowing security updates.
+requests>=2.31,<3
+yfinance>=0.2.43,<0.3
+python-dotenv>=1.0.1,<2
