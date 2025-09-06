@@ -27,18 +27,17 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Cache pip
-        uses: actions/cache@v4
+    # ✅ 用 requirements.txt 的缓存与安装（替换掉你原来的两步）
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-v1
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
 
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install requests python-dotenv yfinance
+          pip install -r requirements.txt
 
       # ✅ 自检（不泄露密钥）
       - name: Check env presence (no secrets printed)
